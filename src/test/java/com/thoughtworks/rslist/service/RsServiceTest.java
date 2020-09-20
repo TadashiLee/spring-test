@@ -1,5 +1,6 @@
 package com.thoughtworks.rslist.service;
 
+import com.thoughtworks.rslist.domain.RsEvent;
 import com.thoughtworks.rslist.domain.Trade;
 import com.thoughtworks.rslist.domain.Vote;
 import com.thoughtworks.rslist.dto.RsEventDto;
@@ -29,6 +30,7 @@ import java.util.Optional;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
@@ -250,7 +252,7 @@ class RsServiceTest {
                     .build();
     RsEventDto rsEventDto1 =
             RsEventDto.builder()
-                    .eventName("event name2")
+                    .eventName("event name 2")
                     .id(2)
                     .keyword("keyword")
                     .voteNum(3)
@@ -261,12 +263,17 @@ class RsServiceTest {
     rsEventDtos.add(rsEventDto);
     rsEventDtos.add(rsEventDto1);
     when(rsEventRepository.findAll()).thenReturn(rsEventDtos);
-    // when&then
-    mockMvc.perform(get("/rs/list"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(2)))
-            .andExpect(jsonPath("$[0].eventName", is("event name2")))
-            .andExpect(jsonPath("$[1].eventName", is("event name1")));
+    // when
+    List<RsEvent> rsEvents = rsService.getRsEvents(null, null);
+    //then
+    assertEquals(2,rsEvents.size());
+    assertEquals("event name 2",rsEvents.get(0).getEventName());
+    assertEquals("event name 1",rsEvents.get(1).getEventName());
+//    mockMvc.perform(get("/rs/list"))
+//            .andExpect(status().isOk())
+//            .andExpect(jsonPath("$", hasSize(2)))
+//            .andExpect(jsonPath("$[0].eventName", is("event name2")))
+//            .andExpect(jsonPath("$[1].eventName", is("event name1")));
 
   }
 

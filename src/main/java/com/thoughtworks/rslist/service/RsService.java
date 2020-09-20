@@ -1,5 +1,6 @@
 package com.thoughtworks.rslist.service;
 
+import com.thoughtworks.rslist.domain.RsEvent;
 import com.thoughtworks.rslist.domain.Trade;
 import com.thoughtworks.rslist.domain.Vote;
 import com.thoughtworks.rslist.dto.RsEventDto;
@@ -16,7 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class RsService {
@@ -81,6 +86,28 @@ public class RsService {
         throw new IsBadRequestException();
       }
     }
+  }
+  public List<RsEvent> getRsEvents(Integer start, Integer end){
+    List<RsEventDto> rsEventDtos = rsEventRepository.findAll();
+    List<RsEvent> rsEvents =
+            rsEventDtos.stream()
+                    .map(
+                            item ->
+                                    RsEvent.builder()
+                                            .eventName(item.getEventName())
+                                            .keyword(item.getKeyword())
+                                            .userId(item.getId())
+                                            .voteNum(item.getVoteNum())
+                                            .rank(item.getRank())
+                                            .build())
+                    .collect(Collectors.toList());
+
+//    rsEvents.sort(Comparator.comparingInt(RsEvent::getVoteNum));
+    Collections.sort(rsEvents);
+    if (start == null || end == null) {
+      return rsEvents;
+    }
+    return rsEvents.subList(start - 1, end);
   }
 
   @ExceptionHandler(IsBadRequestException.class)
