@@ -84,7 +84,7 @@ public class RsService {
   }
 
   @ExceptionHandler(IsBadRequestException.class)
-  public ResponseEntity handlerExceptions(Exception ex) {
+  public static ResponseEntity handlerExceptions(Exception ex) {
     return ResponseEntity.badRequest().build();
   }
 

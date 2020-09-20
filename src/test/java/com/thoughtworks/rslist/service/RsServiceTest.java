@@ -14,20 +14,38 @@ import com.thoughtworks.rslist.repository.VoteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@SpringBootTest
+@AutoConfigureMockMvc
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class RsServiceTest {
   RsService rsService;
-
+  @Autowired
+  MockMvc mockMvc;
   @Mock RsEventRepository rsEventRepository;
   @Mock UserRepository userRepository;
   @Mock VoteRepository voteRepository;
@@ -187,8 +205,7 @@ class RsServiceTest {
                     .build();
     when(rsEventRepository.findById(anyInt())).thenReturn(Optional.of(rsEventDto));
     when(tradeRepository.findById(anyInt())).thenReturn(Optional.of(tradeDto));
-    // when
-    // then
+    // when&then
     assertThrows(
             IsBadRequestException.class,
             () -> {
@@ -208,4 +225,49 @@ class RsServiceTest {
           rsService.vote(vote, 1);
         });
   }
+
+  @Test
+  void getRsEventByRank() throws Exception {
+    // given
+    UserDto userDto =
+            UserDto.builder()
+                    .voteNum(5)
+                    .phone("18888888888")
+                    .gender("female")
+                    .email("a@b.com")
+                    .age(19)
+                    .userName("xiaoli")
+                    .id(2)
+                    .build();
+    RsEventDto rsEventDto =
+            RsEventDto.builder()
+                    .eventName("event name 1")
+                    .id(1)
+                    .keyword("keyword")
+                    .voteNum(2)
+                    .user(userDto)
+                    .rank(0)
+                    .build();
+    RsEventDto rsEventDto1 =
+            RsEventDto.builder()
+                    .eventName("event name2")
+                    .id(2)
+                    .keyword("keyword")
+                    .voteNum(3)
+                    .user(userDto)
+                    .rank(0)
+                    .build();
+    List<RsEventDto> rsEventDtos = new ArrayList<>();
+    rsEventDtos.add(rsEventDto);
+    rsEventDtos.add(rsEventDto1);
+    when(rsEventRepository.findAll()).thenReturn(rsEventDtos);
+    // when&then
+    mockMvc.perform(get("/rs/list"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].eventName", is("event name2")))
+            .andExpect(jsonPath("$[1].eventName", is("event name1")));
+
+  }
+
 }
