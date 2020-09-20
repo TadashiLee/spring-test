@@ -15,10 +15,8 @@ import javax.persistence.*;
 @Table(name = "trade")
 public class TradeDto {
     @Id
-    @GeneratedValue
-    private int id;
-    private int amount;
     private int rank;
+    private int amount;
 
     @ManyToOne
     @JoinColumn(name = "rs_event_id") private RsEventDto rsEvent;

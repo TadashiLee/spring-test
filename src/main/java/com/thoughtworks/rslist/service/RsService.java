@@ -6,11 +6,15 @@ import com.thoughtworks.rslist.dto.RsEventDto;
 import com.thoughtworks.rslist.dto.TradeDto;
 import com.thoughtworks.rslist.dto.UserDto;
 import com.thoughtworks.rslist.dto.VoteDto;
+import com.thoughtworks.rslist.exception.IsBadRequestException;
 import com.thoughtworks.rslist.repository.RsEventRepository;
 import com.thoughtworks.rslist.repository.TradeRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
 import com.thoughtworks.rslist.repository.VoteRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.Optional;
 
@@ -54,14 +58,34 @@ public class RsService {
 
   public void buy(Trade trade, int id) {
     Optional<RsEventDto> rsEventDto = rsEventRepository.findById(id);
+    Optional<TradeDto> tradeDto = tradeRepository.findById(trade.getRank());
     if (!rsEventDto.isPresent()) {
       throw new RuntimeException();
     }
-    TradeDto tradeDto = TradeDto.builder()
-            .amount(trade.getAmount())
-            .rank(trade.getRank())
-            .rsEvent(rsEventDto.get())
-            .build();
-    tradeRepository.save(tradeDto);
+    if (!tradeDto.isPresent()) {
+      TradeDto tradeDtoSave = TradeDto.builder()
+              .amount(trade.getAmount())
+              .rank(trade.getRank())
+              .rsEvent(rsEventDto.get())
+              .build();
+      tradeRepository.save(tradeDtoSave);
+    }else {
+      if (trade.getAmount()>tradeDto.get().getAmount()){
+        TradeDto tradeDtoSave = TradeDto.builder()
+                .amount(trade.getAmount())
+                .rank(trade.getRank())
+                .rsEvent(rsEventDto.get())
+                .build();
+        tradeRepository.save(tradeDtoSave);
+      }else {
+        throw new IsBadRequestException();
+      }
+    }
   }
+
+  @ExceptionHandler(IsBadRequestException.class)
+  public ResponseEntity handlerExceptions(Exception ex) {
+    return ResponseEntity.badRequest().build();
+  }
+
 }

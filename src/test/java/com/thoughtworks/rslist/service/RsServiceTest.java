@@ -6,6 +6,7 @@ import com.thoughtworks.rslist.dto.RsEventDto;
 import com.thoughtworks.rslist.dto.TradeDto;
 import com.thoughtworks.rslist.dto.UserDto;
 import com.thoughtworks.rslist.dto.VoteDto;
+import com.thoughtworks.rslist.exception.IsBadRequestException;
 import com.thoughtworks.rslist.repository.RsEventRepository;
 import com.thoughtworks.rslist.repository.TradeRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
@@ -13,6 +14,7 @@ import com.thoughtworks.rslist.repository.VoteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -84,7 +86,7 @@ class RsServiceTest {
   }
 
   @Test
-  void shouldBuySuccess() {
+  void shouldBuySuccessWhenRankNotBuy() {
     // given
     UserDto userDto =
             UserDto.builder()
@@ -115,6 +117,83 @@ class RsServiceTest {
                     .rsEvent(rsEventDto)
                     .build();
     verify(tradeRepository).save(tradeDto);
+  }
+
+  @Test
+  void shouldBuySuccessWhenRankBuyButAmountIsLarger() {
+    // given
+    UserDto userDto =
+            UserDto.builder()
+                    .voteNum(5)
+                    .phone("18888888888")
+                    .gender("female")
+                    .email("a@b.com")
+                    .age(19)
+                    .userName("xiaoli")
+                    .id(2)
+                    .build();
+    RsEventDto rsEventDto =
+            RsEventDto.builder()
+                    .eventName("event name")
+                    .id(1)
+                    .keyword("keyword")
+                    .voteNum(2)
+                    .user(userDto)
+                    .build();
+    TradeDto tradeDto =
+            TradeDto.builder()
+                    .amount(50)
+                    .rank(1)
+                    .rsEvent(rsEventDto)
+                    .build();
+    when(rsEventRepository.findById(anyInt())).thenReturn(Optional.of(rsEventDto));
+    when(tradeRepository.findById(anyInt())).thenReturn(Optional.of(tradeDto));
+    // when
+    rsService.buy(trade, 1);
+    // then
+    verify(tradeRepository).save(TradeDto.builder()
+            .amount(100)
+            .rank(1)
+            .rsEvent(rsEventDto)
+            .build());
+  }
+
+  @Test
+  void shouldNotBuySuccessWhenRankBuyButAmountIsSmaller() {
+    // given
+    UserDto userDto =
+            UserDto.builder()
+                    .voteNum(5)
+                    .phone("18888888888")
+                    .gender("female")
+                    .email("a@b.com")
+                    .age(19)
+                    .userName("xiaoli")
+                    .id(2)
+                    .build();
+    RsEventDto rsEventDto =
+            RsEventDto.builder()
+                    .eventName("event name")
+                    .id(1)
+                    .keyword("keyword")
+                    .voteNum(2)
+                    .user(userDto)
+                    .build();
+    TradeDto tradeDto =
+            TradeDto.builder()
+                    .amount(200)
+                    .rank(1)
+                    .rsEvent(rsEventDto)
+                    .build();
+    when(rsEventRepository.findById(anyInt())).thenReturn(Optional.of(rsEventDto));
+    when(tradeRepository.findById(anyInt())).thenReturn(Optional.of(tradeDto));
+    // when
+    // then
+    assertThrows(
+            IsBadRequestException.class,
+            () -> {
+              rsService.buy(trade, 1);
+            });
   }
 
   @Test
